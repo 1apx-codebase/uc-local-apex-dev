@@ -5,6 +5,8 @@ UC Local APEX Dev creates a local Oracle APEX development environment on your co
 ## Contents
 
 - [Features](#features)
+- [Installation Process](#installation-process)
+- [Container Setup](#container-setup)
 - [Documentation](#documentation)
 - [Documentation Contents](#documentation-contents)
 - [Source Code Contents](#source-code-contents)
@@ -25,6 +27,18 @@ This section summarizes the main features of UC Local APEX Dev.
 - Test APEX application installs and SQL scripts in a clean schema.
 - Use PL/SQL debugging from VS Code SQL Developer.
 - Run ORDS with local HTTPS by using self-signed certificates.
+
+## Installation Process
+
+This section shows the order of the first-time setup steps.
+
+![UC Local APEX Dev installation process](docs/src/assets/readme/installation-process.svg)
+
+## Container Setup
+
+This section shows how the local containers, ports, volume, and bind mounts fit together.
+
+![UC Local APEX Dev container setup](docs/src/assets/readme/container-setup.svg)
 
 ## Documentation
 
