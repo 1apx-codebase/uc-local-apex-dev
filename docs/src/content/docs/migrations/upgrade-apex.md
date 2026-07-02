@@ -1,58 +1,103 @@
 ---
 title: Upgrade APEX
-description: Guide on how to upgrade any APEX version in the containerized UC Local APEX Dev
+description: Upgrade Oracle APEX in UC Local APEX Dev.
 sidebar:
   order: 1
 ---
 
-You don't depend on any changes to this project to upgrade APEX. As soon as an update is available, you can follow these steps to upgrade APEX in your local environment.
+Use this guide to upgrade Oracle APEX in an existing UC Local APEX Dev environment. APEX is the application development platform served by ORDS.
 
-## Versions >= 26.2: use the upgrade script
+## Contents
 
-Starting with version 26.2, this project ships a `scripts/upgrade-apex.sh` script that automates downloading the latest APEX, running the installer, copying the images, and reapplying the `INTERNAL` workspace settings (extended session timeout, ACLs, etc.).
+- [Before You Begin](#before-you-begin)
+- [Upgrade APEX in 26.2 or Later](#upgrade-apex-in-262-or-later)
+- [Upgrade APEX Before 26.2](#upgrade-apex-before-262)
+- [Fix Browser Cache Errors](#fix-browser-cache-errors)
 
-```sh
-./scripts/upgrade-apex.sh
-```
+## Before You Begin
 
-## Versions < 26.2: manual upgrade
+This section helps you choose the correct upgrade method.
 
-### Download and unzip latest APEX version
+| Name | Description |
+| --- | --- |
+| `26.2` or later | Use `./scripts/upgrade-apex.sh`. |
+| Earlier than `26.2` | Upgrade APEX manually. |
 
-```sh
-# Using curl (pre-installed on macOS):
-curl -fLO https://download.oracle.com/otn_software/apex/apex-latest.zip
+> **Important**
+> Back up your schemas, workspaces, applications, and ORDS modules before you upgrade APEX.
 
-# Or using wget:
-wget https://download.oracle.com/otn_software/apex/apex-latest.zip
+## Upgrade APEX in 26.2 or Later
 
-unzip apex-latest.zip
-rm apex-latest.zip
-rm -rf ./META-INF || true
-```
+This section uses the project script to download APEX, run the installer, copy images, and reapply Internal workspace settings.
 
-### Perform the upgrade
+1. Run the upgrade script.
 
-```sh
-cd apex
-sql -name local-23ai-sys @apexins.sql TBS_APEX TBS_APEX TEMP /i/
-exit;
-```
+   ```bash
+   ./scripts/upgrade-apex.sh
+   ```
 
-(If you are still on 23ai use `SYSAUX` instead)
+2. Wait for the script to finish.
+3. Open APEX and verify that your workspaces still load.
 
-```sh
-cd apex
-sql -name local-23ai-sys @apexins.sql SYSAUX SYSAUX TEMP /i/
-exit;
-```
+## Upgrade APEX Before 26.2
 
-### Update the images
+This section gives the manual upgrade flow for older project versions.
 
-```sh
-cd ..
-rm -rf ./apex-images || true
-cp -r ./apex/images ./apex-images
-```
+1. Download the latest APEX ZIP file with `curl`.
 
-If you get a popup error saying your files are outdated, you need to clear your browser cache.
+   ```bash
+   curl -fLO https://download.oracle.com/otn_software/apex/apex-latest.zip
+   ```
+
+   Or use `wget`.
+
+   ```bash
+   wget https://download.oracle.com/otn_software/apex/apex-latest.zip
+   ```
+
+2. Unzip the file.
+
+   ```bash
+   unzip apex-latest.zip
+   rm apex-latest.zip
+   rm -rf ./META-INF || true
+   ```
+
+3. Change into the APEX directory.
+
+   ```bash
+   cd apex
+   ```
+
+4. Run the APEX installer.
+
+   ```bash
+   sql -name local-23ai-sys @apexins.sql TBS_APEX TBS_APEX TEMP /i/
+   exit;
+   ```
+
+5. If you are still on a 23ai version that uses `SYSAUX`, run this installer command instead.
+
+   ```bash
+   sql -name local-23ai-sys @apexins.sql SYSAUX SYSAUX TEMP /i/
+   exit;
+   ```
+
+6. Return to the project root.
+
+   ```bash
+   cd ..
+   ```
+
+7. Replace the APEX images.
+
+   ```bash
+   rm -rf ./apex-images || true
+   cp -r ./apex/images ./apex-images
+   ```
+
+## Fix Browser Cache Errors
+
+This section explains what to do if APEX reports outdated files.
+
+If your browser shows a popup that files are outdated, clear your browser cache and reload APEX.

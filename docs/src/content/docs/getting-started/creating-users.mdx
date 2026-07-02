@@ -1,118 +1,152 @@
 ---
 title: Creating Users
-description: Learn how to create database users and APEX workspaces in your local APEX development environment.
+description: Create database schemas and Oracle APEX workspaces for local development.
 sidebar:
   order: 3
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
-## Create User and Workspace
+Use this guide to create and manage local database users. In this project, a database user owns a schema, and a schema contains database objects such as tables, views, packages, and indexes.
 
-Create a new database schema and APEX workspace in one command:
+## Contents
 
-```bash
-local-26ai.sh create-user movies
-```
+- [Create a Schema and Workspace](#create-a-schema-and-workspace)
+- [Create a Schema Without a Workspace](#create-a-schema-without-a-workspace)
+- [Create a Compressed Schema](#create-a-compressed-schema)
+- [Clear a Schema](#clear-a-schema)
+- [Drop a Schema](#drop-a-schema)
+- [Connect to the Database](#connect-to-the-database)
 
-This will:
+## Create a Schema and Workspace
 
-- Create a new schema with the given name
-- Store the schema password in the `.env` file
-- Save the connection in SQLcl's connection store
-- Add all necessary development grants
-- Give access to datapump directories
-- Create an APEX workspace with convenient settings
-- Optimize workspace settings like session length, max emails and REST messages and password lifetime
+This section creates one database schema and one matching APEX workspace.
 
-<Aside type="tip" title="Access Credentials">
-  You can access the workspace with: - **Username**: `ADMIN` or the schema name
-  (e.g., `MOVIES`) - **Password**: `Welcome_1` - **URL**:
-  http://localhost:8181/ords/apex
+1. Run `create-user` with the schema name you want.
+
+   ```bash
+   local-26ai.sh create-user movies
+   ```
+
+2. Wait for the script to finish.
+3. Open APEX at [http://localhost:8181/ords/apex](http://localhost:8181/ords/apex).
+4. Sign in with the workspace credentials shown in the following table.
+
+| Name | Description |
+| --- | --- |
+| Workspace | Schema name, such as `MOVIES`. |
+| User name | `ADMIN` or the schema name, such as `MOVIES`. |
+| Password | Matching `<SCHEMA>_USER_PASSWORD` value in `.env`. |
+
+The command performs these actions:
+
+- Creates the schema.
+- Stores the schema password in `.env`.
+- Saves the connection in the SQLcl connection store.
+- Adds development permissions for local work.
+- Grants access to Data Pump directories.
+- Creates an APEX workspace.
+- Sets local development defaults for session length, email limits, REST message limits, and password lifetime.
+
+## Create a Schema Without a Workspace
+
+This section creates only a database schema. Use this when you do not need an APEX workspace.
+
+1. Run `create-user` with `--skip-workspace`.
+
+   ```bash
+   local-26ai.sh create-user myschema --skip-workspace
+   ```
+
+2. Use the generated password from `.env` when you connect.
+
+## Create a Compressed Schema
+
+This section creates a schema whose new objects use Oracle Advanced Compression by default. Compression can reduce disk usage for tables and B-tree indexes.
+
+1. Run `create-user` with `--compress`.
+
+   ```bash
+   local-26ai.sh create-user movies --compress
+   ```
+
+2. Add other options when needed.
+
+   ```bash
+   local-26ai.sh create-user myschema --skip-workspace --compress
+   ```
+
+<Aside type="note" title="Existing data">
+  The `--compress` option sets defaults for new objects. To compress an
+  existing schema, use `local-26ai.sh compress-space`. See
+  [Compress a Schema Tablespace](/products/uc-local-apex-dev/docs/getting-started/common-tasks/#compress-a-schema-tablespace).
 </Aside>
 
-### Create Schema Only
+## Clear a Schema
 
-If you only need a database schema without an APEX workspace:
+This section removes objects from a schema but keeps the schema itself. Use it to test install scripts again in the same schema.
 
-```bash
-local-26ai.sh create-user myschema --skip-workspace
-```
-
-### Create a Compressed Schema
-
-Add `--compress` to enable [Advanced Compression](https://www.oracle.com/database/advanced-compression/) (included in Oracle Database Free) on the new schema's tablespace from the start. Every table and index created afterwards is stored compressed automatically — advanced row compression for tables, advanced index compression for B-tree indexes — keeping the schema's disk footprint smaller as it grows.
-
-```bash
-local-26ai.sh create-user movies --compress
-# Combine with other flags as needed:
-local-26ai.sh create-user myschema --skip-workspace --compress
-```
-
-<Aside type="tip" title="Already have data?">
-  `--compress` only sets the defaults for *new* segments, so it's meant for a fresh schema. To compress a schema that already contains data, use [`compress-space`](/products/uc-local-apex-dev/docs/getting-started/common-tasks/#compress-a-schemas-tablespace) instead.
+<Aside type="caution" title="Data loss">
+  `clear-schema` drops all objects in the schema. Back up any data you need
+  before you run it.
 </Aside>
 
-### Clear a Schema
+1. Run `clear-schema`.
 
-Useful for testing installation scripts multiple times:
+   ```bash
+   local-26ai.sh clear-schema movies
+   ```
 
-```bash
-local-26ai.sh clear-schema movies
-# Asks for confirmation before proceeding
-```
+2. Confirm the prompt.
 
-To skip the confirmation prompt (useful for automation), use the `-y` flag:
+To skip the confirmation prompt for automation, add `-y`.
 
 ```bash
 local-26ai.sh clear-schema movies -y
 ```
 
-<Aside type="caution" title="Data Loss Warning">
-  This drops ALL objects in the schema. Never run this accidentally on important
-  schemas! Or better: run backups regularly.
+## Drop a Schema
+
+This section permanently removes a schema, its objects, and its dedicated tablespace datafile.
+
+<Aside type="caution" title="Permanent data loss">
+  `drop-user` permanently removes the schema and reclaims its datafile. Back up
+  any data you need before you run it.
 </Aside>
 
-### Drop a Schema
+1. Run `drop-user`.
 
-Completely remove a schema and all its objects. This also drops the schema's dedicated tablespace and its datafile, so the disk space is reclaimed instead of being left behind as an orphan:
+   ```bash
+   local-26ai.sh drop-user movies
+   ```
 
-```bash
-local-26ai.sh drop-user movies
-# Asks for confirmation before proceeding
-```
+2. Confirm the prompt.
 
-To skip the confirmation prompt (useful for automation), use the `-y` flag:
+To skip the confirmation prompt for automation, add `-y`.
 
 ```bash
 local-26ai.sh drop-user movies -y
 ```
 
-<Aside type="caution" title="Data Loss Warning">
-  This permanently removes the schema, all its objects, and its datafile. Make sure you have backups of anything you need.
-</Aside>
+## Connect to the Database
 
-## Database Access
+This section shows how to connect to schemas created by the project.
 
-### SQLcl and SQL Developer Access
+All created users are saved in SQLcl's connection store.
 
-All created users are automatically stored in SQLcl's connection store:
+| Name | Description |
+| --- | --- |
+| Schema user | `sql -name local-26ai-movies` |
+| SYS user | `sql -name local-26ai-sys` |
 
-```bash
-# Connect using the stored connection
-sql -name local-26ai-movies
+The VS Code SQL Developer extension can also use these connections. Refresh the connection list if a new connection does not appear.
 
-# Connect to sys user
-sql -name local-26ai-sys
-```
+For other tools, use these values:
 
-You will also find the connections in the VS Code SQL Developer extension. You might need to refresh the connections list after creating a new user.
-
-### Other Development Tools
-
-Use these connection details for other development tools:
-
-- **Host**: 26ai
-- **Port**: 1521
-- **Service**: FREEPDB1
-- **Username**: Your schema name
+| Name | Description |
+| --- | --- |
+| Host | `26ai` |
+| Port | `1521` |
+| Service | `FREEPDB1` |
+| User name | Your schema name. |
+| Password | Matching password value from `.env`. |

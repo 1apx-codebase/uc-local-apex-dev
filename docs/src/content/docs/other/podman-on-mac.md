@@ -1,104 +1,134 @@
 ---
-title: Init podman on MacOS
-description: Getting started with Podman on macOS for Oracle 23ai development
+title: Podman on macOS
+description: Install and start Podman on macOS for UC Local APEX Dev.
 sidebar:
     order: 10
 ---
 
+Use this guide if you want to run UC Local APEX Dev with Podman on macOS. Podman is a container runtime that can run the Oracle Database and ORDS containers used by this project.
+
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Install Podman](#install-podman)
+- [Test Podman](#test-podman)
+- [Run This Project with Podman](#run-this-project-with-podman)
+- [Troubleshooting](#troubleshooting)
+- [After a Restart](#after-a-restart)
+
 ## Prerequisites
 
-You need the [homebrew](https://brew.sh/) package manager for this:
+This section installs the command-line tools used by the project.
 
-```sh
-brew install docker docker-compose sqlcl
-```
+1. Install Homebrew from [brew.sh](https://brew.sh/) if it is not installed.
+2. Install Docker command-line tools, Compose, and SQLcl.
 
-Upgrade tolerant way of adding SQLcl to your PATH (add it to your ~/.bashrc or ~/.zshrc):
+   ```bash
+   brew install docker docker-compose sqlcl
+   ```
 
-```sh
-SQLCLPATH=$(ls -t $(brew --prefix)/Caskroom/sqlcl | head -1)
-PATH=$(brew --prefix)/Caskroom/sqlcl/$SQLCLPATH/sqlcl/bin:$PATH
-```
+3. Add SQLcl to your shell `PATH`.
 
-[Read this](https://hartenfeller.dev/blog/sqlcl-homebrew-macos) for more information.
+   ```bash
+   SQLCLPATH=$(ls -t $(brew --prefix)/Caskroom/sqlcl | head -1)
+   PATH=$(brew --prefix)/Caskroom/sqlcl/$SQLCLPATH/sqlcl/bin:$PATH
+   ```
 
-## Installing Podman
+For more SQLcl details, see [Install SQLcl with Homebrew on macOS](https://hartenfeller.dev/blog/sqlcl-homebrew-macos).
 
-If you have no Docker runtime yet, I recommend doing the following:
+## Install Podman
 
-```sh
-brew install podman
+This section installs Podman and creates the Podman virtual machine.
 
-podman machine init
+1. Install Podman.
 
-# I recommend increasing the resources if you have enough
-podman machine set --memory 4096
-podman machine set --cpus 3
+   ```bash
+   brew install podman
+   ```
 
-podman machine start
+2. Create the Podman machine.
 
-# if it says something like:
+   ```bash
+   podman machine init
+   ```
 
-# The system helper service is not installed; the default Docker API socket
-# address can’t be used by podman. If you would like to install it, run the following commands:
-# sudo /opt/homebrew/Cellar/podman/5.3.1/bin/podman-mac-helper install
-# podman machine stop; podman machine start
+3. Set the recommended resources.
 
-# Please do so
-```
+   ```bash
+   podman machine set --memory 4096
+   podman machine set --cpus 3
+   ```
 
-Now test that podman works:
+4. Start the Podman machine.
 
-```sh
-podman ps
-```
+   ```bash
+   podman machine start
+   ```
 
-The project's scripts (`install.sh`, `local-26ai.sh`, etc.) natively detect Podman — if `docker`
-isn't installed they automatically use `podman` and the native `podman compose` subcommand. You can
-run them as-is. If you have both Docker and Podman installed and want to force Podman, set
-`CONTAINER_CLI`:
+5. If Podman tells you to install the system helper service, run the commands shown by Podman. Then stop and start the Podman machine again.
 
-```sh
+## Test Podman
+
+This section confirms that Podman can list containers.
+
+1. Run:
+
+   ```bash
+   podman ps
+   ```
+
+2. Confirm that the command finishes without an error.
+
+## Run This Project with Podman
+
+This section explains how UC Local APEX Dev chooses Podman.
+
+The project scripts, including `install.sh` and `local-26ai.sh`, detect Podman automatically when Docker is not installed. If both Docker and Podman are installed, force Podman with `CONTAINER_CLI`.
+
+```bash
 CONTAINER_CLI=podman ./install.sh
 ```
 
-If you'd rather route the scripts' `docker` usage through Podman's Docker-compatible socket instead,
-you can still do that — test it with `docker ps`.
+Use native Podman Compose commands when you run Compose directly.
+
+| Name | Description |
+| --- | --- |
+| `podman compose up -d` | Starts the containers. |
+| `podman compose stop` | Stops the containers. |
+| `podman ps` | Lists containers. |
+
+> **Important**
+> Use the `podman compose` subcommand. Do not use the standalone `podman-compose` package for this project because it may not support everything in `docker-compose.yml`.
 
 ## Troubleshooting
 
-If this does not work please [follow this guide](https://podman-desktop.io/docs/migrating-from-docker/using-the-docker_host-environment-variable).
+This section lists common Podman setup problems on macOS.
 
-If you have this file `~/.docker/config.json`, delete or rename it if you see this error: `error getting credentials - err: exec: "docker-credential-desktop": executable file not found in $PATH`.
+| Name | Description |
+| --- | --- |
+| Docker-compatible socket does not work | Follow Podman's guide for the `DOCKER_HOST` environment variable: [Using the Docker host environment variable](https://podman-desktop.io/docs/migrating-from-docker/using-the-docker_host-environment-variable). |
+| `docker-credential-desktop` is missing | Rename or remove `~/.docker/config.json` if the error mentions `docker-credential-desktop`. |
+| Compose command fails | Use `podman compose`, not `podman-compose`. |
 
-Alternatively, you can drive the stack directly with the native `podman compose` subcommand:
+## After a Restart
 
-```sh
-podman compose up -d
-podman compose stop
-podman ps
-# etc
-```
+This section explains how to restart Podman after you restart your Mac.
 
-Use `podman compose` (the subcommand), not the standalone `podman-compose` package — the latter
-can cause trouble and doesn't support everything in this project's `docker-compose.yml`.
+1. Start the Podman machine.
 
-## After a restart
+   ```bash
+   podman machine start
+   ```
 
-After a restart of your Mac, you need to start the Podman machine again:
+2. Start UC Local APEX Dev.
 
-```sh
-podman machine start
-```
+   ```bash
+   local-26ai.sh start
+   ```
 
-Equally you can stop it with:
+Before you stop the Podman machine, stop the database cleanly.
 
-```sh
+```bash
+local-26ai.sh stop
 podman machine stop
-```
-
-But I recommend stopping the database before stopping the Podman machine:
-
-```sh
-local-23ai.sh stop
 ```

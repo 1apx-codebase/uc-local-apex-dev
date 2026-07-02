@@ -1,182 +1,227 @@
 ---
 title: Common Tasks
-description: Learn how to perform common development tasks with UC Local APEX Dev
+description: Start, stop, maintain, and reset the local APEX development environment.
 sidebar:
   order: 2
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
-Once your environment is set up, these are the most common tasks you'll perform during APEX development.
+Use this guide after you finish the installation. It explains the commands you will use most often for containers, ORDS, storage, accounts, imports, and resets.
 
-<Aside type="note" title="Docker or Podman">
-The commands below that call `docker compose` work with Podman too — just substitute `podman compose`. The project's own scripts (`local-26ai.sh`, `./scripts/*.sh`) auto-detect the engine, so you don't need to change anything when running those.
+## Contents
+
+- [Container Commands](#container-commands)
+- [ORDS Configuration](#ords-configuration)
+- [Storage Maintenance](#storage-maintenance)
+- [APEX Account Maintenance](#apex-account-maintenance)
+- [Workspace Import and Export](#workspace-import-and-export)
+- [Reset the Environment](#reset-the-environment)
+
+<Aside type="note" title="Docker and Podman">
+  Commands that use `docker compose` also work with Podman when you replace
+  them with `podman compose`. Project scripts such as `local-26ai.sh`
+  auto-detect Docker or Podman.
 </Aside>
 
-## Managing Containers
+## Container Commands
 
-### Start/Stop Containers
+This section shows how to start and stop the local containers.
 
-```bash
-# Stop database
-local-26ai.sh stop
-# You could also run this, but the script will gracefully stop the database
-# docker compose stop   (or: podman compose stop)
+| Name | Description |
+| --- | --- |
+| `local-26ai.sh start` | Starts the environment. |
+| `local-26ai.sh stop` | Stops the environment cleanly. |
+| `docker compose start` | Starts the containers with Docker Compose. |
+| `docker compose stop` | Stops the containers with Docker Compose. |
+| `podman compose start` | Starts the containers with Podman Compose. |
+| `podman compose stop` | Stops the containers with Podman Compose. |
 
-local-26ai.sh start
-# Or
-# docker compose start  (or: podman compose start)
-```
+Use `local-26ai.sh stop` when possible. It stops the database cleanly.
 
 ## ORDS Configuration
 
-### Modify ORDS Settings
+This section explains how to change ORDS settings and enable local HTTPS.
 
-The `ords-config` folder in the root directory contains ORDS configuration files. Modify these files and restart the ORDS container to apply changes:
+ORDS, or Oracle REST Data Services, serves APEX pages and REST endpoints. Its configuration files are in `ords-config` after setup.
 
-```bash
-# After modifying config files
-docker compose restart ords-26ai   # or: podman compose restart ords-26ai
-```
+### Change ORDS Settings
 
-### SSL Configuration
+1. Edit the files in `ords-config`.
+2. Restart the ORDS container.
 
-Enable HTTPS for ORDS by creating self-signed certificates. On MacOS and Linux it will also add the certificate to your system's keychain:
+   ```bash
+   docker compose restart ords-26ai
+   ```
 
-```bash
-sudo ./scripts/create-self-signed-certificates.sh
-docker compose restart ords-26ai   # or: podman compose restart ords-26ai
-```
+3. If you use Podman, run the Podman version instead.
 
-Access via: https://localhost:8443/ords (Port 8443 instead of 8181).
+   ```bash
+   podman compose restart ords-26ai
+   ```
 
-## Maintenance Tasks
+### Enable Local HTTPS
+
+This procedure creates self-signed certificates for local HTTPS. On macOS and Linux, the script also tries to add the certificate to the system trust store.
+
+1. Run the certificate script.
+
+   ```bash
+   sudo ./scripts/create-self-signed-certificates.sh
+   ```
+
+2. Restart ORDS.
+
+   ```bash
+   docker compose restart ords-26ai
+   ```
+
+3. Open ORDS at [https://localhost:8443/ords](https://localhost:8443/ords).
+
+<Aside type="note" title="HTTPS port">
+  HTTPS uses port `8443`. HTTP uses port `8181`.
+</Aside>
+
+## Storage Maintenance
+
+This section helps you monitor and reduce database disk usage.
+
+Oracle Database Free has a storage limit. The `used-space` command shows how much of that limit you use.
 
 ### Check Database Space Usage
 
-Keep in mind that the FREE database has a space limitation of 12GB. You can check the used space with:
+1. Run `used-space`.
 
-```bash
-local-26ai.sh used-space
+   ```bash
+   local-26ai.sh used-space
+   ```
 
-#    CURRENT_GB    LIMIT_GB    PERCENT_OF_LIMIT STATUS
-# _____________ ___________ ___________________ _________
-#          5.04          12               41.97 OK
-
-
-# Tablespace                 Total MB    Used MB    Free MB    Pct. Free
-# _______________________ ___________ __________ __________ ____________
-# SYSAUX                         3440       3158        282            8
-# SYSTEM                          690        679         11            2
-# USERS                           118         59         59           50
-# TBS_PLUGINS                     112         38         74           66
-# UNDOTBS1                        103         23         80           78
-# TBS_AOP                          77          7         70           91
-```
+2. Review the database and tablespace output.
 
 ### Shrink Database Files
 
-If your tablespaces have grown larger than the space they actually use, you can shrink them to reclaim space. This can take a while.
+Use `shrink-space` when tablespaces have allocated more space than they currently use.
+
+1. Run `shrink-space`.
+
+   ```bash
+   local-26ai.sh shrink-space
+   ```
+
+2. Wait for the script to finish. This can take a while.
+
+### Compress a Schema Tablespace
+
+Use `compress-space` to reduce the stored size of one schema. The command enables Oracle Advanced Compression on the schema tablespace and rebuilds existing objects.
+
+| Name | Description |
+| --- | --- |
+| Tables | Uses advanced row compression, shown as `COMPRESS FOR OLTP`. |
+| B-tree indexes | Uses advanced index compression, shown as `COMPRESS ADVANCED LOW`. |
+| New objects | Inherit compression from the tablespace defaults. |
+
+1. Run `compress-space` with the schema name.
+
+   ```bash
+   local-26ai.sh compress-space movies
+   ```
+
+2. Confirm the prompt.
+
+To skip the confirmation prompt for automation, add `-y`.
 
 ```bash
-local-26ai.sh shrink-space
-```
-
-### Compress a Schema's Tablespace
-
-While `shrink-space` only reclaims *unused* space, `compress-space` makes the data itself smaller. It enables [Advanced Compression](https://www.oracle.com/database/advanced-compression/) (included in Oracle Database Free) on a single schema's `tbs_<schema>` tablespace and rebuilds its existing objects so they're stored compressed:
-
-- Tables get advanced row compression (`COMPRESS FOR OLTP`), which keeps recompressing as rows change.
-- B-tree indexes get advanced index compression (`COMPRESS ADVANCED LOW`).
-- New segments inherit the compression automatically, because the tablespace defaults are set too.
-
-After rebuilding, it runs `dbms_space.shrink_tablespace` and resizes the datafile down, so the freed space is returned to the OS in the same run.
-
-```bash
-local-26ai.sh compress-space movies
-# Skip the confirmation prompt with -y:
 local-26ai.sh compress-space movies -y
-
-# Tablespace usage before compression:
-#    USED_MB    ALLOCATED_MB
-# __________ _______________
-#     1000.8            2100
-# ...
-# Tablespace usage after compression:
-#    USED_MB    ALLOCATED_MB
-# __________ _______________
-#      595.6           749.7
 ```
 
-<Aside type="note">
-The operation is online and non-destructive (objects are rebuilt, never dropped) and safe to re-run — already-compressed objects are skipped. Single-column unique/primary-key indexes are intentionally left uncompressed: advanced index compression can't dedup them, so there's nothing to gain.
+<Aside type="note" title="Compression behavior">
+  The operation rebuilds objects and does not drop them. Already compressed
+  objects are skipped. Single-column unique and primary-key indexes are left
+  uncompressed because advanced index compression does not help them.
 </Aside>
 
-### Disable Archive Logs
+## APEX Account Maintenance
 
-For development environments, you might want to disable archive logging. You will be asked if you want to do this in the `after-first-db-start.sh` script, but you can also run it manually:
+This section covers common APEX account expiration issues in a local environment.
 
-```bash
-./scripts/disable-archive-logs.sh
-```
+### Unlock Expired Accounts
 
-### Manage APEX Account Expiration
-
-#### Unexpire Accounts
-
-If APEX_PUBLIC_USER or workspace accounts are locked due to password expiration, unlock them with:
+Run this command if `APEX_PUBLIC_USER` or workspace accounts are locked because passwords expired.
 
 ```bash
 ./scripts/unexpire-accounts.sh
 ```
 
-This is useful after database migrations or when accounts have expired due to time constraints.
+### Disable Password Expiration
 
-#### Disable Password Expiration
-
-To prevent APEX workspace accounts from expiring in the future:
+Run this command if you do not want APEX workspace accounts to expire.
 
 ```bash
 ./scripts/disable-password-expiration.sh
 ```
 
-<Aside type="note">
-  Even with password expiration disabled, users may still be prompted to change
-  their password on their first login after a migration.
+<Aside type="note" title="First login after migration">
+  APEX may still ask users to change their password on first login after a
+  migration.
 </Aside>
 
-## Workspace Import/Export
+## Workspace Import and Export
 
-### Import All Exports
+This section helps you import exported workspaces and fix a known import issue.
 
-Automatically import all export files from the `./backups/import/` directory:
+### Import All Export Files
 
-```bash
-./scripts/import-all.sh
-```
+Use `import-all.sh` to import files from `./backups/import`.
 
-This is particularly useful during database migrations when you need to bulk import multiple workspaces and schemas. The script will provide a summary of successful and failed imports.
+1. Copy the files you want to import into `./backups/import`.
+2. Run the import script.
 
-### Fix Workspace Export Issues
+   ```bash
+   ./scripts/import-all.sh
+   ```
 
-When re-importing APEX workspaces, you may encounter issues due to a [known bug with group assignments](https://forums.oracle.com/ords/apexds/post/apex-18-2-failing-to-import-workspace-5048). Fix this automatically:
+3. Review the success and failure summary.
 
-```bash
-./scripts/fix-ws-group-ids.sh
-```
+### Fix Workspace Group IDs
 
-This script updates all export files in `./backups/import/` to remove problematic group ID parameters, allowing successful re-import.
+Some APEX workspace exports can fail during import because of group assignment IDs. The fix script removes the group ID values from export files in `./backups/import`.
 
-## Complete Environment Reset
+1. Copy the workspace export files into `./backups/import`.
+2. Run the fix script.
 
-### Delete All Data
+   ```bash
+   ./scripts/fix-ws-group-ids.sh
+   ```
 
-To start completely fresh (⚠️ **ALL DATA WILL BE LOST**):
+3. Run the import again.
 
-```bash
-docker compose down        # or: podman compose down
-docker volume rm oradata-26ai   # or: podman volume rm oradata-26ai
-rm .env
-```
+## Reset the Environment
 
-Then follow the [setup instructions](/products/uc-local-apex-dev/docs/getting-started/) again.
+This section deletes all local database data and lets you start again from a clean environment.
+
+<Aside type="caution" title="Permanent data loss">
+  This reset deletes the container volume and `.env`. Back up anything you need
+  before you run these commands.
+</Aside>
+
+1. Stop and remove the containers.
+
+   ```bash
+   docker compose down
+   ```
+
+2. Remove the database volume.
+
+   ```bash
+   docker volume rm oradata-26ai
+   ```
+
+3. Remove `.env`.
+
+   ```bash
+   rm .env
+   ```
+
+4. Follow [Getting Started](/products/uc-local-apex-dev/docs/getting-started/) again.
+
+If you use Podman, replace `docker` with `podman`.

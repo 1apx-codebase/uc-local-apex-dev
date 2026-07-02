@@ -1,27 +1,53 @@
 ---
 title: PL/SQL Debugging
-description: Learn how to use the SQL Developer debugger with your local APEX development environment.
+description: Debug PL/SQL code in the local database with the VS Code SQL Developer extension.
 sidebar:
   order: 5
 ---
 
-All created users have the necessary grants for PL/SQL debugging in VS Code SQL Developer:
+Use this guide to prepare PL/SQL debugging for schemas created by UC Local APEX Dev. PL/SQL is Oracle Database's procedural language for packages, procedures, and functions.
 
-1. Compile your package for debug
-2. Set a breakpoint
-3. Start the debugger
-4. Use your local machine IP address
+## Contents
 
-Get your local IP:
+- [Prerequisites](#prerequisites)
+- [Find Your Local IP Address](#find-your-local-ip-address)
+- [Start a Debug Session](#start-a-debug-session)
+- [Video Tutorial](#video-tutorial)
 
-```bash
-# macOS
-ipconfig getifaddr en0
+## Prerequisites
 
-# Linux
-hostname -I | awk '{print $1}'
-```
+This section lists what you need before you start debugging.
 
-## Tutorial
+| Name | Description |
+| --- | --- |
+| Created schema | A schema created with `local-26ai.sh create-user`. |
+| VS Code SQL Developer extension | The VS Code extension used to connect and debug PL/SQL. |
+| Debug build | Package, procedure, or function compiled for debugging. |
+| Local IP address | The IP address that the database can use to call back to your machine. |
 
-[Check out this video tutorial](https://www.youtube.com/watch?v=XaFrONQ_-fI&list=PLpg61eZsDU4Z4G67ZwX6K5CQh0HhqyM5Z&index=23) for a step-by-step guide on using the SQL Developer debugger with your local APEX development environment.
+Schemas created by this project already include the database permissions needed for PL/SQL debugging.
+
+## Find Your Local IP Address
+
+This section shows commands for finding your local IP address.
+
+| Name | Description |
+| --- | --- |
+| macOS | `ipconfig getifaddr en0` |
+| Linux | `hostname -I \| awk '{print $1}'` |
+
+## Start a Debug Session
+
+This section gives the basic debugging flow.
+
+1. Connect to your schema in the VS Code SQL Developer extension.
+2. Compile the PL/SQL package, procedure, or function for debugging.
+3. Set a breakpoint.
+4. Start the debugger.
+5. When prompted, enter your local IP address.
+
+## Video Tutorial
+
+This section links to a longer walkthrough.
+
+Use this [SQL Developer debugger video tutorial](https://www.youtube.com/watch?v=XaFrONQ_-fI&list=PLpg61eZsDU4Z4G67ZwX6K5CQh0HhqyM5Z&index=23) if you want to see the full process.

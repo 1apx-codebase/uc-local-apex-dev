@@ -1,58 +1,79 @@
 ---
 title: Install Apps or Scripts
-description: Quickly install APEX applications or run SQL scripts in your local APEX development environment.
+description: Test APEX application exports and SQL scripts in a clean local schema.
 sidebar:
   order: 6
 ---
 
-These scripts will use the `UC_TESTINSTALL_1` schema and workspace to install applications or run SQL scripts. This is useful for testing application installs in a clean environment.
+import { Aside } from "@astrojs/starlight/components";
 
-## Test APEX Application Installs
+Use this guide to test whether an APEX application export or SQL script installs cleanly. The scripts use the `UC_TESTINSTALL_1` schema and workspace.
 
-Test application installations in a clean environment:
+## Contents
 
-```bash
-local-26ai.sh test-app-install ./path/to/my_app.sql
-```
+- [Test an APEX Application Install](#test-an-apex-application-install)
+- [Test a SQL Script Install](#test-a-sql-script-install)
+- [Command Options](#command-options)
 
-This will:
+<Aside type="caution" title="Test schema is cleared">
+  These commands create or clear the `UC_TESTINSTALL_1` schema and workspace.
+  Do not store data there that you need to keep.
+</Aside>
 
-- Create or clear the `UC_TESTINSTALL_1` schema and workspace
-- Install your application
-- Install any supporting objects (e.g., packages, types, etc.)
-- Provide a summary with:
-  - Object types and counts
-  - List of invalid objects
-  - APEX object dependency scan results
+## Test an APEX Application Install
 
-### Skip Confirmation
+This section installs an APEX application export into a clean test workspace and reports the result.
 
-To skip the confirmation prompt (useful for automation), use the `-y` flag:
+1. Run `test-app-install` with the path to the application export.
+
+   ```bash
+   local-26ai.sh test-app-install ./path/to/my_app.sql
+   ```
+
+2. Confirm the prompt.
+3. Review the summary.
+
+The summary includes:
+
+- Object types and counts.
+- Invalid database objects.
+- APEX object dependency scan results.
+
+To skip the confirmation prompt for automation, add `-y`.
 
 ```bash
 local-26ai.sh test-app-install ./path/to/my_app.sql -y
 ```
 
-## Test SQL Scripts
+## Test a SQL Script Install
 
-Test SQL scripts in a clean environment:
+This section runs a SQL script in a clean test schema and reports the result.
 
-```bash
-local-26ai.sh test-script-install ./path/to/sql_script.sql
-```
+1. Run `test-script-install` with the path to the SQL script.
 
-This will:
+   ```bash
+   local-26ai.sh test-script-install ./path/to/sql_script.sql
+   ```
 
-- Create or clear the `UC_TESTINSTALL_1` schema and workspace
-- Run your SQL script
-- Provide a summary with:
-  - Object types and counts
-  - List of invalid objects
+2. Confirm the prompt.
+3. Review the summary.
 
-### Skip Confirmation
+The summary includes:
 
-To skip the confirmation prompt (useful for automation), use the `-y` flag:
+- Object types and counts.
+- Invalid database objects.
+
+To skip the confirmation prompt for automation, add `-y`.
 
 ```bash
 local-26ai.sh test-script-install ./path/to/sql_script.sql -y
 ```
+
+## Command Options
+
+This section lists the options used by both test commands.
+
+| Name | Description | Required |
+| --- | --- | --- |
+| Application or script path | Path to the `.sql` file to install. | Yes |
+| `-y` | Skips the confirmation prompt. Use only in automation or when you are sure the test schema can be cleared. | No |

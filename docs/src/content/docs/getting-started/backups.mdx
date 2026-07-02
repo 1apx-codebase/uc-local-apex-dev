@@ -1,39 +1,74 @@
 ---
 title: Backups
-description: Learn how to create and manage backups in your local APEX development environment.
+description: Create and import local backups for schemas, APEX workspaces, applications, and ORDS modules.
 sidebar:
   order: 4
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
-### Backup All Users
+Use this guide to export and import local development data. A backup helps you recover data before a migration, reset, schema clear, or schema drop.
 
-Create datapump dumps of all users, including APEX workspaces and applications:
+Oracle Data Pump is Oracle's export and import tool for database objects and data. This project uses Data Pump for schema backups.
 
-```bash
-local-26ai.sh backup-all
-```
+## Contents
 
-Files are written to the `./backups/export` directory.
+- [Backup Output](#backup-output)
+- [Back Up All Project Users](#back-up-all-project-users)
+- [Back Up One Schema](#back-up-one-schema)
+- [Import a Backup](#import-a-backup)
 
-### Backup Specific Schema
+## Backup Output
 
-Backup a single schema with its workspace and applications:
+This section explains where backup files are written.
 
-```bash
-local-26ai.sh backup-schema movies
-```
+| Name | Description |
+| --- | --- |
+| `./backups/export` | Default output folder for exported backup files. |
+| `./backups/import` | Input folder used by import scripts. |
 
-### Import Backup
+<Aside type="caution" title="Important: Manual backups">
+  `backup-all` backs up users created with this project's `create-user` command.
+  If you created schemas or workspaces another way, back them up manually.
+</Aside>
 
-Restore a previously created backup:
+## Back Up All Project Users
 
-```bash
-local-26ai.sh import-backup movies
-```
+This section exports all users created by this project, including their APEX workspaces and applications.
 
-<Aside type="note" title="Future Enhancements">
-  Currently this creates the user if it doesn't exist and imports the datapump
-  dump. I plan to enhance this to also import APEX workspaces and applications.
+1. Run `backup-all`.
+
+   ```bash
+   local-26ai.sh backup-all
+   ```
+
+2. Check `./backups/export` for the generated files.
+
+## Back Up One Schema
+
+This section exports one schema with its workspace and applications.
+
+1. Run `backup-schema` with the schema name.
+
+   ```bash
+   local-26ai.sh backup-schema movies
+   ```
+
+2. Check `./backups/export` for the generated files.
+
+## Import a Backup
+
+This section imports a backup for one schema.
+
+1. Confirm that the backup files are available to the import script.
+2. Run `import-backup` with the schema name.
+
+   ```bash
+   local-26ai.sh import-backup movies
+   ```
+
+<Aside type="note" title="Current import scope">
+  At the time this page was written, `import-backup` creates the user if needed
+  and imports the Data Pump dump. You may need to import APEX workspaces and
+  applications separately if the script does not handle them for your version.
 </Aside>

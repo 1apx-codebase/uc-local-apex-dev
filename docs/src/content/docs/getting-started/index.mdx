@@ -1,176 +1,171 @@
 ---
 title: Getting Started
-description: Quick setup guide for UC Local APEX Dev environment
+description: Install UC Local APEX Dev and start Oracle Database, APEX, and ORDS locally.
 sidebar:
   order: 1
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
-Get your Oracle 26ai database with APEX and ORDS running locally in just a few minutes. This guide will walk you through the complete setup process.
+Use this guide to install UC Local APEX Dev and start the local containers. When you finish, you can open Oracle APEX in your browser and connect to the database.
+
+Oracle APEX is the application development platform. ORDS, or Oracle REST Data Services, is the web service that serves APEX and REST endpoints.
+
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Install the Environment](#install-the-environment)
+- [Open APEX](#open-apex)
+- [Add the Project to Your Path](#add-the-project-to-your-path)
+- [Access Details](#access-details)
+- [Next Steps](#next-steps)
 
 ## Prerequisites
 
-Before you begin, make sure you have the following installed:
+This section lists the software and resources you need before you install the environment.
 
-### Required Software
+| Name | Description | Required |
+| --- | --- | --- |
+| Docker or Podman | Container runtime used to run Oracle Database and ORDS. | Yes |
+| Compose | `docker compose`, `docker-compose`, or `podman compose`. | Yes |
+| SQLcl | Oracle command-line SQL tool. The `sql` command must be in your `PATH`. | Yes |
+| Bash-compatible shell | Shell used to run the install and helper scripts. | Yes |
+| `unzip` | Command used during setup. | Yes |
+| `curl` or `wget` | Command used to download files during setup. | Yes |
 
-- **Docker or Podman** — both are natively supported. The scripts auto-detect which engine is installed (preferring `docker` if both are present).
-- **Compose** — either `docker compose` (v2 plugin, or the legacy `docker-compose` v1) or the native `podman compose` subcommand.
-- **SQLcl** with "sql" command in PATH
-- **Bash-compatible shell**
+<Aside type="caution" title="Resource requirements">
+  Allocate enough resources to your container virtual machine. The default
+  Podman virtual machine settings may be too small for Oracle Database.
 
-<Aside type="tip" title="Forcing the container engine">
-If you have both Docker and Podman installed and want to force one, set `CONTAINER_CLI` before running any script:
-
-```bash
-CONTAINER_CLI=podman ./install.sh
-```
-
+  Recommended minimum: 4 GB RAM, 3 CPUs, and 20 GB disk space.
 </Aside>
 
-<Aside type="note" title="Podman compose provider">
-  On Podman we use the native `podman compose` subcommand (which delegates to a
-  compose provider), not the standalone `podman-compose` — the latter doesn't
-  support everything in this project's `docker-compose.yml`.
+### Platform Notes
 
-  The provider talks to Podman's API socket. If `podman compose` fails with
-  _"Cannot connect to the Docker daemon at unix:///run/user/.../podman/podman.sock"_,
-  enable the rootless socket:
+This section gives extra setup notes for specific operating systems.
 
-  ```bash
-  systemctl --user enable --now podman.socket
-  ```
+| Name | Description |
+| --- | --- |
+| macOS | If you use Podman, read [Podman on macOS](/products/uc-local-apex-dev/docs/other/podman-on-mac/) before you install. |
+| Windows | Use Windows Subsystem for Linux 2 (WSL2). Install Ubuntu, Docker inside Ubuntu, and SQLcl inside Ubuntu. |
+| Linux | Install Docker or Podman, a compose command, SQLcl, and a Bash-compatible shell. |
 
-  On a **headless server you use over SSH**, also enable lingering so the
-  socket survives after you log out:
+<Aside type="note" title="Choose Docker or Podman">
+  The scripts auto-detect the container runtime. If Docker and Podman are both
+  installed, the scripts use Docker by default. To force Podman, run:
 
   ```bash
-  loginctl enable-linger "$USER"
+  CONTAINER_CLI=podman ./install.sh
   ```
 </Aside>
 
-<Aside type="caution" title="Resource Requirements">
-Make sure your virtual machine has enough resources allocated. **The default Podman VM will cause issues with Oracle**.
+## Install the Environment
 
-Recommended minimum:
+This section installs the project, creates local configuration, pulls container images, starts the containers, and configures APEX.
 
-- **4GB RAM**
-- **3 CPUs**
-- **20GB disk space**
+1. Clone the repository.
 
-[Learn more about Oracle container requirements](https://hartenfeller.dev/blog/oracle-23ai-container-wont-start-mac)
+   ```bash
+   git clone https://github.com/United-Codes/uc-local-apex-dev.git
+   cd uc-local-apex-dev
+   ```
 
+2. Make the scripts executable.
+
+   ```bash
+   chmod +x ./install.sh ./local-26ai.sh ./setup.sh ./scripts/*.sh
+   ```
+
+3. Run the installer.
+
+   ```bash
+   ./install.sh
+   ```
+
+4. Wait for the installer to finish.
+
+   The install usually takes about 15 to 20 minutes. Most of the time is spent waiting for Oracle Database and ORDS to start.
+
+The installer performs these actions:
+
+| Name | Description |
+| --- | --- |
+| Dependency check | Checks for a container runtime, compose command, `sql`, `unzip`, and `curl` or `wget`. |
+| Local configuration | Runs `./setup.sh` to create `.env` if needed. |
+| Container images | Pulls the database and ORDS images. |
+| Container startup | Starts the stack with the detected compose command. |
+| Readiness wait | Waits for Oracle Database and ORDS to finish first startup. |
+| ORDS gateway mode | Sets the ORDS PL/SQL gateway mode to `proxied`, which APEX uses. |
+| APEX setup | Runs `./scripts/after-first-db-start.sh` to install APEX and apply local development settings. |
+| ORDS restart | Restarts ORDS so it loads the APEX configuration. |
+
+<Aside type="note" title="Existing .env file">
+  If `.env` already exists and contains the required values, `setup.sh` keeps
+  those values.
 </Aside>
 
-### Platform-Specific Notes
+## Open APEX
 
-#### macOS Users
+This section verifies that APEX is available in your browser.
 
-If you're using macOS, [read the Podman setup guide](/products/uc-local-apex-dev/docs/other/podman-on-mac) for additional configuration steps.
+1. Open [http://localhost:8181/ords/apex](http://localhost:8181/ords/apex).
+2. Sign in to the `INTERNAL` workspace.
+3. Use `ADMIN` as the user name.
+4. Use the `ORACLE_PASSWORD` value from `.env` as the password.
 
-#### Windows Users
-
-We recommend using WSL2 (Windows Subsystem for Linux) for the best experience. Follow these guides:
-
-- [Install Ubuntu on WSL2](https://documentation.ubuntu.com/wsl/latest/howto/install-ubuntu-wsl2/).
-- [Install docker in Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
-- [Install SQLcl in Linux](https://pacesettergraam.wordpress.com/2025/02/21/installing-sqlcl-in-ubuntu-linux-on-oci/)
-
-## Quick Setup
-
-### 1. Clone the Repository
+If APEX shows `Account Is Locked`, run:
 
 ```bash
-git clone https://github.com/United-Codes/uc-local-apex-dev.git
-cd uc-local-apex-dev
-```
-
-### 2. Make Scripts Executable
-
-```bash
-chmod +x ./install.sh ./local-26ai.sh ./setup.sh ./scripts/*.sh
-```
-
-### 3. Run the Installer
-
-```bash
-./install.sh
-```
-
-`install.sh` is a one-shot installer that does the full bootstrap end-to-end:
-
-1. Checks that a container engine (`docker` or `podman`) with a compose command, `sql` (SQLcl), `unzip` and `curl`/`wget` are on your `PATH`.
-2. Runs `./setup.sh` to generate `.env` with a random Oracle SYS password (skipped if `.env` already exists and contains all required keys).
-3. Pulls the DB + ORDS container images.
-4. Starts the stack with `<engine> compose up -d`.
-5. Waits for the database to be ready (up to 25 min) and for ORDS to finish its first-boot install (up to 15 min).
-6. Sets the ORDS PL/SQL gateway mode to `proxied` (the recommended setting for APEX).
-7. Runs `./scripts/after-first-db-start.sh` non-interactively — installs APEX, applies dev-friendly defaults (disables archive logs, relaxes APEX password rules), and sets the APEX `INTERNAL`/`ADMIN` password to the same `ORACLE_PASSWORD` value from `.env`.
-8. Restarts the ORDS container so it picks up the new APEX module + config change, and waits for it to come back.
-
-The whole flow takes roughly 15–20 minutes on a typical machine, mostly waiting on the Oracle DB to come up. When it finishes you'll see a `=== Done ===` banner with the next steps.
-
-### 4. Log into APEX
-
-Visit http://localhost:8181/ords/apex to log in. `install.sh` already set `ords --config /etc/ords/config config --db-pool default set plsql.gateway.mode proxied` and restarted ORDS so APEX is ready.
-
-If you get an "Account Is Locked" message:
-
-```sh
 ./scripts/unexpire-accounts.sh
 ```
 
-If you don't want APEX to force you to change passwords:
+If APEX asks you to change passwords and you want to disable password expiration for local development, run:
 
-```sh
+```bash
 ./scripts/disable-password-expiration.sh
 ```
 
-Optionally [set up local SSL/HTTPS](/products/uc-local-apex-dev/docs/getting-started/common-tasks/#ssl-configuration) for ORDS, or save disk space by removing the `apex` install folder:
-
-```bash
-rm -rf ./apex
-```
-
-### 5. PATH Configuration
-
-For easier script access, add the repository to your PATH:
-
-```bash
-# Add to ~/.zshrc or ~/.bashrc
-export PATH="/Users/username/path/to/uc-local-apex-dev:$PATH"
-```
-
-Then use scripts from anywhere:
-
-```bash
-local-26ai.sh create-user newproject
-local-26ai.sh backup-all
-local-26ai.sh stop
-```
-
-<Aside type="tip" title="Script Help">
-  Run `local-26ai.sh --help` to see all available commands and options.
+<Aside type="caution" title="Important: Local passwords">
+  The `.env` file contains generated passwords. Keep it private, even for local
+  development.
 </Aside>
+
+## Add the Project to Your Path
+
+This section lets you run `local-26ai.sh` from any directory.
+
+1. Open your shell startup file, such as `~/.zshrc` or `~/.bashrc`.
+2. Add the repository path to `PATH`.
+
+   ```bash
+   export PATH="/Users/username/path/to/uc-local-apex-dev:$PATH"
+   ```
+
+3. Start a new terminal session.
+4. Run a command from another directory.
+
+   ```bash
+   local-26ai.sh --help
+   ```
+
+## Access Details
+
+This section lists the default URLs and connection values.
+
+| Name | Description |
+| --- | --- |
+| APEX | [http://localhost:8181/ords/apex](http://localhost:8181/ords/apex) |
+| ORDS landing page | [http://localhost:8181/ords/_/landing](http://localhost:8181/ords/_/landing) |
+| Database host | `26ai` |
+| Database port | `1521` |
+| Database service | `FREEPDB1` |
+| Internal APEX user | `ADMIN` |
+| Internal APEX password | `ORACLE_PASSWORD` value from `.env` |
 
 ## Next Steps
 
-Now that your environment is running:
+This section points you to the next common tasks after installation.
 
-1. **Create your first workspace**: `local-26ai.sh create-user myproject`
-2. **Explore the available scripts**: `local-26ai.sh --help`
-3. **Start developing your APEX applications**
-
-## Access Your Environment
-
-Once setup is complete, you can access:
-
-- **APEX**: http://localhost:8181/ords/apex
-- **ORDS Landing**: http://localhost:8181/ords/\_/landing
-- **Database**: ai:1521 (Service: FREEPDB1)
-
-### Default APEX Credentials
-
-- **INTERNAL workspace**: `ADMIN` / value of `ORACLE_PASSWORD` in `.env`
-- **Your own workspaces**: schema/workspace name from `./scripts/create-user.sh <NAME>` / matching `<NAME>_USER_PASSWORD` in `.env`
+1. Create your first schema and workspace with [Creating Users](/products/uc-local-apex-dev/docs/getting-started/creating-users/).
+2. Learn start, stop, and maintenance commands in [Common Tasks](/products/uc-local-apex-dev/docs/getting-started/common-tasks/).
+3. Set up backups by reading [Backups](/products/uc-local-apex-dev/docs/getting-started/backups/).

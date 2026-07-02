@@ -1,49 +1,79 @@
 ---
 title: FAQ
-description: Frequently Asked Questions about uc-local-apex-dev
+description: Frequently asked questions about UC Local APEX Dev.
 sidebar:
     order: 1
 ---
 
-## Why uc-local-apex-dev instead of other docker-compose files?
+Use this page for short answers to common questions. For installation steps, see [Getting Started](/products/uc-local-apex-dev/docs/getting-started/).
 
-There are many docker-compose files available for running Oracle Database with APEX and ORDS. However, these two factors set uc-local-apex-dev apart:
-- Upgrades: if new versions of APEX, ORDS or the DB are released, I provide migration guides to help you upgrade your environment.
-- Scripts: This project includes many scripts to help you with common tasks like creating users, backing up the database, testing install scripts, etc. These scripts are designed to be easy to use and automate common development tasks.
+## Contents
+
+- [Why use UC Local APEX Dev instead of another compose file?](#why-use-uc-local-apex-dev-instead-of-another-compose-file)
+- [Can I modify ORDS settings?](#can-i-modify-ords-settings)
+- [How do I upgrade the database?](#how-do-i-upgrade-the-database)
+- [How do I upgrade ORDS?](#how-do-i-upgrade-ords)
+- [How do I patch APEX?](#how-do-i-patch-apex)
+
+## Why use UC Local APEX Dev instead of another compose file?
+
+UC Local APEX Dev includes migration guides and task scripts in addition to container configuration.
+
+| Name | Description |
+| --- | --- |
+| Migration guides | Version-specific instructions for database, APEX, and ORDS changes. |
+| Task scripts | Commands for creating users, backing up data, clearing schemas, and testing installs. |
 
 ## Can I modify ORDS settings?
 
-Yes. A folder named `ords-config` will be created in the root directory. You can modify the config files there. The changes will be applied on the next restart of the ORDS container.
+Yes. The setup creates an `ords-config` folder in the project root.
 
-## How can I upgrade the database version?
+1. Edit the files in `ords-config`.
+2. Restart the ORDS container.
 
-We will release new versions of the project with migration guides when new ORDS or database versions are available. So make sure to keep an eye on the [GitHub repository](https://github.com/United-Codes/uc-local-apex-dev) for updates.
+For details, see [ORDS Configuration](/products/uc-local-apex-dev/docs/getting-started/common-tasks/#ords-configuration).
 
-## How can I upgrade ORDS?
+## How do I upgrade the database?
 
-These will also be covered in the migration guides.
+Use the migration guide for your target project version. Database and container image compatibility can change between releases.
 
-If you are experienced and don't want to wait you can modify the `docker-compose.yml` file to use a different ORDS version. You can find the available versions [in the Oracle container registry](https://container-registry.oracle.com/ords/ocr/ba/database/ords ).
+Before you migrate:
 
+- Read the full migration guide.
+- Back up your schemas and workspaces.
+- Back up any schemas or workspaces that were not created by this project.
+- Check the [GitHub repository](https://github.com/United-Codes/uc-local-apex-dev) for newer release notes.
 
-## How can I patch APEX?
+## How do I upgrade ORDS?
 
-- You need a valid Oracle support account
-- Go to the [APEX Downloads Page](https://www.oracle.com/tools/downloads/apex-downloads/)
-- Click on Patch Set Bundle
-- Login with your Oracle account and download the zip file
-- Unzip the file
-- Start a terminal in the directory
-- Run the following command:
+Use the migration guide for your target project version. ORDS is Oracle REST Data Services, the service that serves APEX and REST endpoints.
 
-```sh
-sql -name local-23ai-sys @catpatch.sql
-```
+If you are experienced and want to test a different ORDS image yourself, edit `docker-compose.yml`. Available ORDS images are listed in the [Oracle Container Registry](https://container-registry.oracle.com/ords/ocr/ba/database/ords).
 
-To update the APEX images (assets):
+## How do I patch APEX?
 
-```sh
-# make sure you are in the directory of the unzipped patch directory
+This section describes the manual APEX patch flow.
 
-cp -r ./images/* {path_to_your_cloned_repo}/apex-images
-```
+> **Important**
+> APEX patch set bundles may require a valid Oracle support account.
+
+1. Open the [APEX downloads page](https://www.oracle.com/tools/downloads/apex-downloads/).
+2. Select **Patch Set Bundle**.
+3. Sign in with your Oracle account.
+4. Download the patch ZIP file.
+5. Unzip the file.
+6. Open a terminal in the unzipped patch directory.
+7. Run the patch script.
+
+   ```bash
+   sql -name local-23ai-sys @catpatch.sql
+   ```
+
+8. Copy the updated images into the project.
+
+   ```bash
+   cp -r ./images/* {path_to_your_cloned_repo}/apex-images
+   ```
+
+> **Note**
+> The example uses `local-23ai-sys` because this FAQ was written for an older project version. Use the SYS connection name that matches your installed version, such as `local-26ai-sys`.
